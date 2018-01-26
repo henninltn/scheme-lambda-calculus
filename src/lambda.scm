@@ -55,3 +55,24 @@
 (print-exp (reduct not tru 'v 'w))
 (print-exp (reduct not fls 'v 'w))
 
+
+;; Pair
+(define pair
+  (lambda (f)
+    (lambda (s)
+      (lambda (b)
+        (reduct b f s)))))
+
+(define fst
+  (lambda (p)
+    (p tru)))
+
+(define snd
+  (lambda (p)
+    (p fls)))
+
+;;; e.g.
+(print-exp (fst (reduct pair 'v 'w)))
+(print-exp (snd (reduct pair 'v 'w)))
+
+
