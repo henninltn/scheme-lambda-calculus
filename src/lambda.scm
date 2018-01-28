@@ -20,6 +20,12 @@
     ((_ f a) (f1 a))
     ((_ f) f)))
 
+(define-syntax ->
+  (syntax-rules ()
+    ((_ arg f1 f2 ...) (-> (f1 arg) f2 ...))
+    ((_ arg f) (f arg))
+    ((_ f) f)))
+
 
 ;; Church Boolean
 (define tru
@@ -72,8 +78,8 @@
     (p fls)))
 
 ;;; e.g.
-(print-exp (fst (reduct pair 'v 'w)))
-(print-exp (snd (reduct pair 'v 'w)))
+(print-exp (-> (reduct pair 'v 'w) fst))
+(print-exp (-> (reduct pair 'v 'w) snd))
 
 
 ;; Church Number
@@ -83,19 +89,19 @@
 
 (define c1
   (lambda-curry (s z)
-                (s z)))
+                (-> z s)))
 
 (define c2
   (lambda-curry (s z)
-                (s (s z))))
+                (-> z s s)))
 
 (define c3
   (lambda-curry (s z)
-                (s (s (s z)))))
+                (-> z s s s)))
 
 (define c4
   (lambda-curry (s z)
-                (s (s (s (s z))))))
+                (-> z s s s s)))
 
 (define scc
   (lambda-curry (n s z)
@@ -127,7 +133,7 @@
 
 (define prd
   (lambda (m)
-      (fst (reduct m ss zz))))
+      (-> (reduct m ss zz) fst)))
 
 (define subtract
   (lambda-curry (m n)
@@ -172,7 +178,7 @@
   (lambda (l)
     (fst (reduct l
                  (lambda-curry (x p)
-                               (reduct pair (snd p) (reduct (reduct cons x (snd p)))))
+                               (reduct pair (snd p) (reduct cons x (snd p))))
                  (reduct pair nil nil)))))
 
 (define nil_s
@@ -184,11 +190,11 @@
 
 (define head_s
   (lambda (z)
-    (fst (snd z))))
+    (-> z snd fst)))
 
 (define tail_s
   (lambda (z)
-    (snd (snd z))))
+    (-> z snd snd)))
 
 (define isnil_s
   fst)
@@ -197,16 +203,16 @@
 (print-exp (reduct nil 'v 'w))
 (print-exp (reduct isnil nil 'v 'w))
 (print-exp (reduct isnil (reduct cons 'w nil) 'v 'w))
-(print-exp (head (reduct cons 'v (reduct cons 'w nil))))
-(print-exp (head (tail (reduct cons 'v (reduct cons 'w nil)))))
-(print-exp (reduct (tail (tail (reduct cons 'v (reduct cons 'w nil)))) 'v 'w))
+(print-exp (-> (reduct cons 'v (reduct cons 'w nil)) head))
+(print-exp (-> (reduct cons 'v (reduct cons 'w nil)) tail head))
+(print-exp (reduct (-> (reduct cons 'v (reduct cons 'w nil)) tail tail) 'v 'w))
 
 (print-exp nil_s)
 (print-exp (reduct fst nil_s 'v 'w))
 (print-exp (reduct snd nil_s 'v 'w))
 (print-exp (reduct isnil_s nil_s))
 (print-exp (reduct isnil_s (reduct cons_s 'w nil_s)))
-(print-exp (head_s (reduct cons_s 'v (reduct cons_s 'w nil_s))))
-(print-exp (head_s (tail_s (reduct cons_s 'v (reduct cons_s 'w nil_s)))))
-(print-exp (tail_s (tail_s (reduct cons_s 'v (reduct cons_s 'w nil_s)))))
+(print-exp (-> (reduct cons_s 'v (reduct cons_s 'w nil_s)) head_s))
+(print-exp (-> (reduct cons_s 'v (reduct cons_s 'w nil_s)) tail_s head_s))
+(print-exp (-> (reduct cons_s 'v (reduct cons_s 'w nil_s)) tail_s tail_s))
 
