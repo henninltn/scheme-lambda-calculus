@@ -6,6 +6,14 @@
                                    "\noutput = "
                                    (format "~s" exp))))))
 
+(define-macro (lambda-curry args . body)
+  (let ((arg (car args))
+        (rest-args (cdr args)))
+    (if (null? rest-args)
+        `(lambda (,arg) ,@body)
+        `(lambda (,arg)
+           (lambda-curry ,rest-args ,@body)))))
+
 (define-syntax reduct
   (syntax-rules ()
     ((_ f a1 a2 ...) (reduct (f a1) a2 ...))
@@ -15,31 +23,24 @@
 
 ;; Church Boolean
 (define tru
-  (lambda (t)
-    (lambda (f)
-      t)))
+  (lambda-curry (t f) t))
 
 
 (define fls
-  (lambda (t)
-    (lambda (f)
-      f)))
+  (lambda-curry (t f)
+    f))
 
 (define test
-  (lambda (l)
-    (lambda (m)
-      (lambda (n)
-        (reduct l m n)))))
+  (lambda-curry (l m n)
+    (reduct l m n)))
 
 (define _and
-  (lambda (b)
-    (lambda (c)
-      (reduct b c fls))))
+  (lambda-curry (b c)
+                (reduct b c fls)))
 
 (define _or
-  (lambda (b)
-    (lambda (c)
-      (reduct b tru c))))
+  (lambda-curry (b c)
+                (reduct b tru c)))
 
 (define not
   (lambda (b)
@@ -59,10 +60,8 @@
 
 ;; Pair
 (define pair
-  (lambda (f)
-    (lambda (s)
-      (lambda (b)
-        (reduct b f s)))))
+  (lambda-curry (f s b)
+                (reduct b f s)))
 
 (define fst
   (lambda (p)
@@ -79,53 +78,41 @@
 
 ;; Church Number
 (define c0
-  (lambda (s)
-    (lambda (z)
-      z)))
+  (lambda-curry (s z)
+                z))
 
 (define c1
-  (lambda (s)
-    (lambda (z)
-      (s z))))
+  (lambda-curry (s z)
+                (s z)))
 
 (define c2
-  (lambda (s)
-    (lambda (z)
-      (s (s z)))))
+  (lambda-curry (s z)
+                (s (s z))))
 
 (define c3
-  (lambda (s)
-    (lambda (z)
-      (s (s (s z))))))
+  (lambda-curry (s z)
+                (s (s (s z)))))
 
 (define c4
-  (lambda (s)
-    (lambda (z)
-      (s (s (s (s z)))))))
+  (lambda-curry (s z)
+                (s (s (s (s z))))))
 
 (define scc
-  (lambda (n)
-    (lambda (s)
-      (lambda (z)
-        (s (reduct n s z))))))
+  (lambda-curry (n s z)
+                (s (reduct n s z))))
 
 (define plus
-  (lambda (m)
-    (lambda (n)
-      (lambda (s)
-        (lambda (z)
-          (reduct m s (reduct n s z)))))))
+  (lambda-curry (m n s z)
+                (reduct m s (reduct n s z))))
 
 (define times
-  (lambda (m)
-    (lambda (n)
-      (reduct m (plus n) c0))))
+  (lambda-curry (m n)
+                (reduct m (plus n) c0)))
 
 ;; TODO
 (define times2
-  (lambda (m)
-    (lambda (n)
-      m)))
+  (lambda-curry (m n)
+                m))
 
 (define iszero
   (lambda (m)
@@ -143,16 +130,14 @@
       (fst (reduct m ss zz))))
 
 (define subtract
-  (lambda (m)
-    (lambda (n)
-      (reduct n prd m))))
+  (lambda-curry (m n)
+                (reduct n prd m)))
 
 (define equal
-  (lambda (m)
-    (lambda (n)
-      (reduct _and
-              (iszero (reduct subtract m n))
-              (iszero (reduct subtract n m))))))
+  (lambda-curry (m n)
+                (reduct _and
+                        (iszero (reduct subtract m n))
+                        (iszero (reduct subtract n m)))))
 
 ;;; e.g.
 (print-exp (reduct iszero c1 'v 'w))
@@ -168,20 +153,16 @@
 
 ;; List (foldr)
 (define nil
-  (lambda (c)
-    (lambda (n)
-      n)))
+  (lambda-curry (c n)
+                n))
 
 (define cons
-  (lambda (h)
-    (lambda (t)
-      (lambda (c)
-        (lambda (n)
-          (reduct c h (reduct t c n)))))))
+  (lambda-curry (h t c n)
+                (reduct c h (reduct t c n))))
 
 (define isnil
   (lambda (l)
-    (reduct l (lambda (h) (lambda (t) fls)) tru)))
+    (reduct l (lambda-curry (h t) fls) tru)))
 
 (define head
   (lambda (l)
@@ -190,18 +171,16 @@
 (define tail
   (lambda (l)
     (fst (reduct l
-                 (lambda (x)
-                   (lambda (p)
-                     (reduct pair (snd p) (reduct (reduct cons x (snd p))))))
+                 (lambda-curry (x p)
+                               (reduct pair (snd p) (reduct (reduct cons x (snd p)))))
                  (reduct pair nil nil)))))
 
 (define nil_s
   (reduct pair tru tru))
 
 (define cons_s
-  (lambda (h)
-    (lambda (t)
-      (reduct pair fls (reduct pair h t)))))
+  (lambda-curry (h t)
+      (reduct pair fls (reduct pair h t))))
 
 (define head_s
   (lambda (z)
